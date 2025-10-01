@@ -44,12 +44,12 @@ class GridAnimation {
 	init() {
 		this.resizeCanvas();
 		this.setupEventListeners();
-		
+
 		// 移动端性能优化
 		if (isPhone) {
 			this.optimizeForMobile();
 		}
-		
+
 		this.animate();
 
 		// 在移动设备上延迟创建食物，确保画布大小计算正确
@@ -62,14 +62,17 @@ class GridAnimation {
 		}
 
 		// 添加页面可见性变化监听，在页面不可见时暂停动画
-		document.addEventListener(visibilityChangeEvent, this.handleVisibilityChange.bind(this));
+		document.addEventListener(
+			visibilityChangeEvent,
+			this.handleVisibilityChange.bind(this)
+		);
 	}
 
 	optimizeForMobile() {
 		// 检测设备性能, 默认高性能模式
 		const canvas = this.canvas;
-		const ctx = canvas.getContext('2d');
-		
+		const ctx = canvas.getContext("2d");
+
 		// 简单的性能测试
 		const startTime = performance.now();
 		for (let i = 0; i < 1000; i++) {
@@ -77,13 +80,15 @@ class GridAnimation {
 		}
 		const endTime = performance.now();
 		const performanceScore = endTime - startTime;
-		
+
 		// 根据性能调整设置
-		if (performanceScore > 10) { // 低性能设备
+		if (performanceScore > 10) {
+			// 低性能设备
 			this.options.squareSize = Math.max(this.options.squareSize * 1.5, 60);
 			this.options.speed *= 0.7;
 			this.options.trailDuration *= 0.5;
-		} else if (performanceScore > 5) { // 中等性能设备
+		} else if (performanceScore > 5) {
+			// 中等性能设备
 			this.options.squareSize = Math.max(this.options.squareSize * 1.2, 50);
 			this.options.speed *= 0.8;
 		}
@@ -139,27 +144,28 @@ class GridAnimation {
 		this.handleTouchStart = (e) => {
 			e.preventDefault();
 			const now = Date.now();
-			
+
 			// 防止过于频繁的触摸事件
-			if (now - lastTouchTime < 16) { // 约60fps限制
+			if (now - lastTouchTime < 16) {
+				// 约60fps限制
 				return;
 			}
 			lastTouchTime = now;
-			
+
 			if (e.touches.length === 1) {
 				const touch = e.touches[0];
 				const rect = this.canvas.getBoundingClientRect();
 				touchStartPos = {
 					x: touch.clientX - rect.left,
 					y: touch.clientY - rect.top,
-					time: now
+					time: now,
 				};
 				isTouching = true;
 				touchCount++;
-				
+
 				// 立即处理触摸开始位置
 				this.handleTouchMove(touchStartPos.x, touchStartPos.y);
-				
+
 				// 添加触摸开始时的视觉反馈
 				if (this.options.vibrationEnabled && navigator.vibrate) {
 					navigator.vibrate(10); // 轻微震动反馈
@@ -174,9 +180,9 @@ class GridAnimation {
 				const rect = this.canvas.getBoundingClientRect();
 				touchMovePos = {
 					x: touch.clientX - rect.left,
-					y: touch.clientY - rect.top
+					y: touch.clientY - rect.top,
 				};
-				
+
 				// 处理触摸移动
 				this.handleTouchMove(touchMovePos.x, touchMovePos.y);
 			}
@@ -185,7 +191,7 @@ class GridAnimation {
 		this.handleTouchEndEvent = (e) => {
 			e.preventDefault();
 			const now = Date.now();
-			
+
 			// 检测双击手势
 			if (touchStartPos && now - touchStartPos.time < 300) {
 				touchCount++;
@@ -193,7 +199,7 @@ class GridAnimation {
 					// 双击重置蛇身
 					this.resetSnake();
 					touchCount = 0;
-					
+
 					// 双击震动反馈
 					if (this.options.vibrationEnabled && navigator.vibrate) {
 						navigator.vibrate([50, 50, 50]); // 三次短震动
@@ -203,11 +209,11 @@ class GridAnimation {
 			} else {
 				touchCount = 0;
 			}
-			
+
 			isTouching = false;
 			touchStartPos = null;
 			touchMovePos = null;
-			
+
 			// 触摸结束时添加痕迹
 			this.handleTouchEnd();
 		};
@@ -220,20 +226,39 @@ class GridAnimation {
 		};
 
 		// 添加事件监听器
-		this.canvas.addEventListener("touchstart", this.handleTouchStart, { passive: false });
-		this.canvas.addEventListener("touchmove", this.handleTouchMoveEvent, { passive: false });
-		this.canvas.addEventListener("touchend", this.handleTouchEndEvent, { passive: false });
-		this.canvas.addEventListener("touchcancel", this.handleTouchCancel, { passive: false });
+		this.canvas.addEventListener("touchstart", this.handleTouchStart, {
+			passive: false,
+		});
+		this.canvas.addEventListener("touchmove", this.handleTouchMoveEvent, {
+			passive: false,
+		});
+		this.canvas.addEventListener("touchend", this.handleTouchEndEvent, {
+			passive: false,
+		});
+		this.canvas.addEventListener("touchcancel", this.handleTouchCancel, {
+			passive: false,
+		});
 	}
 
 	handleTouchMove(x, y) {
-		const startX = Math.floor(this.gridOffset.x / this.options.squareSize) * this.options.squareSize;
-		const startY = Math.floor(this.gridOffset.y / this.options.squareSize) * this.options.squareSize;
+		const startX =
+			Math.floor(this.gridOffset.x / this.options.squareSize) *
+			this.options.squareSize;
+		const startY =
+			Math.floor(this.gridOffset.y / this.options.squareSize) *
+			this.options.squareSize;
 
-		const hoveredSquareX = Math.floor((x + this.gridOffset.x - startX) / this.options.squareSize);
-		const hoveredSquareY = Math.floor((y + this.gridOffset.y - startY) / this.options.squareSize);
+		const hoveredSquareX = Math.floor(
+			(x + this.gridOffset.x - startX) / this.options.squareSize
+		);
+		const hoveredSquareY = Math.floor(
+			(y + this.gridOffset.y - startY) / this.options.squareSize
+		);
 
-		if (this.hoveredSquare?.x !== hoveredSquareX || this.hoveredSquare?.y !== hoveredSquareY) {
+		if (
+			this.hoveredSquare?.x !== hoveredSquareX ||
+			this.hoveredSquare?.y !== hoveredSquareY
+		) {
 			// 将当前悬停的格子添加到蛇身
 			if (this.hoveredSquare) {
 				this.snakeBody.unshift({
@@ -252,10 +277,14 @@ class GridAnimation {
 			this.targetOpacity = 0.8 * this.options.touchSensitivity; // 使用触摸灵敏度调整透明度
 
 			// 检查是否吃到食物
-			if (this.specialBlock && hoveredSquareX === this.specialBlock.x && hoveredSquareY === this.specialBlock.y) {
+			if (
+				this.specialBlock &&
+				hoveredSquareX === this.specialBlock.x &&
+				hoveredSquareY === this.specialBlock.y
+			) {
 				this.shouldGrow = true;
 				this.createSpecialBlock();
-				
+
 				// 移动端吃到食物时的触觉反馈
 				if (this.options.vibrationEnabled && navigator.vibrate) {
 					navigator.vibrate(100);
@@ -266,8 +295,12 @@ class GridAnimation {
 
 	handleTouchEnd() {
 		if (this.hoveredSquare) {
-			const startX = Math.floor(this.gridOffset.x / this.options.squareSize) * this.options.squareSize;
-			const startY = Math.floor(this.gridOffset.y / this.options.squareSize) * this.options.squareSize;
+			const startX =
+				Math.floor(this.gridOffset.x / this.options.squareSize) *
+				this.options.squareSize;
+			const startY =
+				Math.floor(this.gridOffset.y / this.options.squareSize) *
+				this.options.squareSize;
 			const key = `${this.hoveredSquare.x},${this.hoveredSquare.y}`;
 			this.trailSquares.set(key, {
 				x: this.hoveredSquare.x * this.options.squareSize + startX,
@@ -284,13 +317,13 @@ class GridAnimation {
 		this.snakeBody = [];
 		this.hoveredSquare = null;
 		this.targetOpacity = 0;
-		
+
 		// 清除所有痕迹
 		this.trailSquares.clear();
-		
+
 		// 重新创建食物
 		this.createSpecialBlock();
-		
+
 		// 添加重置的视觉反馈
 		if (this.options.vibrationEnabled && navigator.vibrate) {
 			navigator.vibrate(200); // 长震动表示重置
@@ -378,8 +411,12 @@ class GridAnimation {
 		const dpr = window.devicePixelRatio || 1;
 
 		// 随机生成特殊方块的位置
-		const numSquaresX = Math.ceil((this.canvas.width / dpr) / this.options.squareSize);
-		const numSquaresY = Math.ceil((this.canvas.height / dpr) / this.options.squareSize);
+		const numSquaresX = Math.ceil(
+			this.canvas.width / dpr / this.options.squareSize
+		);
+		const numSquaresY = Math.ceil(
+			this.canvas.height / dpr / this.options.squareSize
+		);
 
 		// 确保食物不会生成在蛇身上和边缘
 		let newX, newY;
@@ -426,14 +463,16 @@ class GridAnimation {
 
 		// 绘制蛇身
 		this.snakeBody.forEach((segment, index) => {
-			const squareX =
-				Math.round(segment.x * this.options.squareSize +
-				startX -
-				(this.gridOffset.x % this.options.squareSize));
-			const squareY =
-				Math.round(segment.y * this.options.squareSize +
-				startY -
-				(this.gridOffset.y % this.options.squareSize));
+			const squareX = Math.round(
+				segment.x * this.options.squareSize +
+					startX -
+					(this.gridOffset.x % this.options.squareSize)
+			);
+			const squareY = Math.round(
+				segment.y * this.options.squareSize +
+					startY -
+					(this.gridOffset.y % this.options.squareSize)
+			);
 
 			this.ctx.shadowColor = this.options.hoverShadowColor;
 			this.ctx.shadowBlur = 15;
@@ -449,8 +488,12 @@ class GridAnimation {
 				const gradientFactor = Math.pow(this.options.snakeColorDecay, index);
 
 				// 解析头部和尾部颜色
-				const headColorMatch = this.options.snakeHeadColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([.\d]+))?\)/);
-				const tailColorMatch = this.options.snakeTailColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([.\d]+))?\)/);
+				const headColorMatch = this.options.snakeHeadColor.match(
+					/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([.\d]+))?\)/
+				);
+				const tailColorMatch = this.options.snakeTailColor.match(
+					/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([.\d]+))?\)/
+				);
 
 				if (headColorMatch && tailColorMatch) {
 					const headR = parseInt(headColorMatch[1]);
@@ -499,8 +542,12 @@ class GridAnimation {
 				y < this.canvas.height + this.options.squareSize;
 				y += this.options.squareSize
 			) {
-				const squareX = Math.round(x - (this.gridOffset.x % this.options.squareSize));
-				const squareY = Math.round(y - (this.gridOffset.y % this.options.squareSize));
+				const squareX = Math.round(
+					x - (this.gridOffset.x % this.options.squareSize)
+				);
+				const squareY = Math.round(
+					y - (this.gridOffset.y % this.options.squareSize)
+				);
 				const gridX = Math.floor((x - startX) / this.options.squareSize);
 				const gridY = Math.floor((y - startY) / this.options.squareSize);
 
@@ -573,7 +620,8 @@ class GridAnimation {
 			this.canvas.width / dpr / 2,
 			this.canvas.height / dpr / 2,
 			Math.sqrt(
-				Math.pow(this.canvas.width / dpr, 2) + Math.pow(this.canvas.height / dpr, 2)
+				Math.pow(this.canvas.width / dpr, 2) +
+					Math.pow(this.canvas.height / dpr, 2)
 			) / 2
 		);
 		gradient.addColorStop(0, "rgba(6, 6, 6, 0)");
@@ -617,9 +665,9 @@ class GridAnimation {
 		);
 
 		// 确保移动位置为整数值来避免子像素渲染导致的闪烁
-		const moveAmount = isPhone ?
-			Math.round(effectiveSpeed * 100) / 100 :
-			effectiveSpeed;
+		const moveAmount = isPhone
+			? Math.round(effectiveSpeed * 100) / 100
+			: effectiveSpeed;
 
 		switch (this.options.direction) {
 			case "right":
@@ -660,14 +708,16 @@ class GridAnimation {
 			const startY =
 				Math.floor(this.gridOffset.y / this.options.squareSize) *
 				this.options.squareSize;
-			const foodX =
-				Math.round(this.specialBlock.x * this.options.squareSize +
-				startX -
-				(this.gridOffset.x % this.options.squareSize));
-			const foodY =
-				Math.round(this.specialBlock.y * this.options.squareSize +
-				startY -
-				(this.gridOffset.y % this.options.squareSize));
+			const foodX = Math.round(
+				this.specialBlock.x * this.options.squareSize +
+					startX -
+					(this.gridOffset.x % this.options.squareSize)
+			);
+			const foodY = Math.round(
+				this.specialBlock.y * this.options.squareSize +
+					startY -
+					(this.gridOffset.y % this.options.squareSize)
+			);
 
 			// 调整适用于设备像素比的边界检查
 			if (
@@ -720,7 +770,7 @@ class GridAnimation {
 		this.canvas.removeEventListener("mouseleave", () =>
 			this.handleMouseLeave()
 		);
-		
+
 		// 移除触摸事件监听器
 		if (isPhone && this.handleTouchStart) {
 			this.canvas.removeEventListener("touchstart", this.handleTouchStart);
@@ -728,8 +778,11 @@ class GridAnimation {
 			this.canvas.removeEventListener("touchend", this.handleTouchEndEvent);
 			this.canvas.removeEventListener("touchcancel", this.handleTouchCancel);
 		}
-		
-		document.removeEventListener(visibilityChangeEvent, this.handleVisibilityChange.bind(this));
+
+		document.removeEventListener(
+			visibilityChangeEvent,
+			this.handleVisibilityChange.bind(this)
+		);
 
 		// 移除方向变化监听
 		if (isPhone && window.orientation !== undefined) {
@@ -868,7 +921,9 @@ function loadMain() {
 				const gridAnimation = new GridAnimation(canvas, {
 					direction: "diagonal",
 					speed: isPhone ? 0.03 : 0.05,
-					borderColor: isPhone ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.1)",
+					borderColor: isPhone
+						? "rgba(255, 255, 255, 0.2)"
+						: "rgba(255, 255, 255, 0.1)",
 					squareSize: isPhone ? 50 : 40,
 					hoverFillColor: "rgba(255, 255, 255, 0.8)",
 					hoverShadowColor: "rgba(255, 255, 255, 0.8)",
@@ -911,7 +966,20 @@ const enterEl = $(".enter");
 enterEl.addEventListener("click", loadAll);
 enterEl.addEventListener("touchenter", loadAll);
 
-document.body.addEventListener("mousewheel", loadAll, { passive: true });
+function handleScrollEvent(e) {
+	const deltaY = e.deltaY || e.wheelDelta * -1 || e.detail;
+	if (deltaY > 0) {
+		loadAll();
+	}
+}
+
+document.body.addEventListener("wheel", handleScrollEvent, { passive: true });
+document.body.addEventListener("mousewheel", handleScrollEvent, {
+	passive: true,
+});
+document.body.addEventListener("DOMMouseScroll", handleScrollEvent, {
+	passive: true,
+}); // Firefox兼容
 $(".arrow").addEventListener("mouseenter", loadAll);
 
 if (isPhone) {

@@ -20,6 +20,9 @@ class GridAnimation {
 			snakeTailColor: options.snakeTailColor || "rgba(100, 100, 255, 0.3)",
 			snakeGradientStops: options.snakeGradientStops || 5, // 渐变过渡的色块数
 			snakeColorDecay: options.snakeColorDecay || 0.7, // 渐变衰减系数，越小衰减越快
+			// 移动端触摸相关选项
+			touchSensitivity: options.touchSensitivity || 1.0, // 触摸灵敏度
+			vibrationEnabled: options.vibrationEnabled || false, // 是否启用震动反馈
 			...options,
 		};
 
@@ -41,6 +44,12 @@ class GridAnimation {
 	init() {
 		this.resizeCanvas();
 		this.setupEventListeners();
+		
+		// 移动端性能优化
+		if (isPhone) {
+			this.optimizeForMobile();
+		}
+		
 		this.animate();
 
 		// 在移动设备上延迟创建食物，确保画布大小计算正确
@@ -54,6 +63,30 @@ class GridAnimation {
 
 		// 添加页面可见性变化监听，在页面不可见时暂停动画
 		document.addEventListener(visibilityChangeEvent, this.handleVisibilityChange.bind(this));
+	}
+
+	optimizeForMobile() {
+		// 检测设备性能, 默认高性能模式
+		const canvas = this.canvas;
+		const ctx = canvas.getContext('2d');
+		
+		// 简单的性能测试
+		const startTime = performance.now();
+		for (let i = 0; i < 1000; i++) {
+			ctx.fillRect(0, 0, 1, 1);
+		}
+		const endTime = performance.now();
+		const performanceScore = endTime - startTime;
+		
+		// 根据性能调整设置
+		if (performanceScore > 10) { // 低性能设备
+			this.options.squareSize = Math.max(this.options.squareSize * 1.5, 60);
+			this.options.speed *= 0.7;
+			this.options.trailDuration *= 0.5;
+		} else if (performanceScore > 5) { // 中等性能设备
+			this.options.squareSize = Math.max(this.options.squareSize * 1.2, 50);
+			this.options.speed *= 0.8;
+		}
 	}
 
 	resizeCanvas() {
@@ -79,6 +112,11 @@ class GridAnimation {
 		this.canvas.addEventListener("mousemove", (e) => this.handleMouseMove(e));
 		this.canvas.addEventListener("mouseleave", () => this.handleMouseLeave());
 
+		// 移动端触摸事件处理
+		if (isPhone) {
+			this.setupTouchEvents();
+		}
+
 		// 监听设备方向变化，重新创建食物
 		if (isPhone && window.orientation !== undefined) {
 			window.addEventListener("orientationchange", () => {
@@ -87,6 +125,175 @@ class GridAnimation {
 					this.createSpecialBlock();
 				}, 300);
 			});
+		}
+	}
+
+	setupTouchEvents() {
+		let touchStartPos = null;
+		let touchMovePos = null;
+		let isTouching = false;
+		let lastTouchTime = 0;
+		let touchCount = 0;
+
+		// 保存事件处理函数引用以便后续移除
+		this.handleTouchStart = (e) => {
+			e.preventDefault();
+			const now = Date.now();
+			
+			// 防止过于频繁的触摸事件
+			if (now - lastTouchTime < 16) { // 约60fps限制
+				return;
+			}
+			lastTouchTime = now;
+			
+			if (e.touches.length === 1) {
+				const touch = e.touches[0];
+				const rect = this.canvas.getBoundingClientRect();
+				touchStartPos = {
+					x: touch.clientX - rect.left,
+					y: touch.clientY - rect.top,
+					time: now
+				};
+				isTouching = true;
+				touchCount++;
+				
+				// 立即处理触摸开始位置
+				this.handleTouchMove(touchStartPos.x, touchStartPos.y);
+				
+				// 添加触摸开始时的视觉反馈
+				if (this.options.vibrationEnabled && navigator.vibrate) {
+					navigator.vibrate(10); // 轻微震动反馈
+				}
+			}
+		};
+
+		this.handleTouchMoveEvent = (e) => {
+			e.preventDefault();
+			if (isTouching && e.touches.length === 1) {
+				const touch = e.touches[0];
+				const rect = this.canvas.getBoundingClientRect();
+				touchMovePos = {
+					x: touch.clientX - rect.left,
+					y: touch.clientY - rect.top
+				};
+				
+				// 处理触摸移动
+				this.handleTouchMove(touchMovePos.x, touchMovePos.y);
+			}
+		};
+
+		this.handleTouchEndEvent = (e) => {
+			e.preventDefault();
+			const now = Date.now();
+			
+			// 检测双击手势
+			if (touchStartPos && now - touchStartPos.time < 300) {
+				touchCount++;
+				if (touchCount === 2) {
+					// 双击重置蛇身
+					this.resetSnake();
+					touchCount = 0;
+					
+					// 双击震动反馈
+					if (this.options.vibrationEnabled && navigator.vibrate) {
+						navigator.vibrate([50, 50, 50]); // 三次短震动
+					}
+					return;
+				}
+			} else {
+				touchCount = 0;
+			}
+			
+			isTouching = false;
+			touchStartPos = null;
+			touchMovePos = null;
+			
+			// 触摸结束时添加痕迹
+			this.handleTouchEnd();
+		};
+
+		this.handleTouchCancel = (e) => {
+			e.preventDefault();
+			isTouching = false;
+			touchStartPos = null;
+			touchMovePos = null;
+		};
+
+		// 添加事件监听器
+		this.canvas.addEventListener("touchstart", this.handleTouchStart, { passive: false });
+		this.canvas.addEventListener("touchmove", this.handleTouchMoveEvent, { passive: false });
+		this.canvas.addEventListener("touchend", this.handleTouchEndEvent, { passive: false });
+		this.canvas.addEventListener("touchcancel", this.handleTouchCancel, { passive: false });
+	}
+
+	handleTouchMove(x, y) {
+		const startX = Math.floor(this.gridOffset.x / this.options.squareSize) * this.options.squareSize;
+		const startY = Math.floor(this.gridOffset.y / this.options.squareSize) * this.options.squareSize;
+
+		const hoveredSquareX = Math.floor((x + this.gridOffset.x - startX) / this.options.squareSize);
+		const hoveredSquareY = Math.floor((y + this.gridOffset.y - startY) / this.options.squareSize);
+
+		if (this.hoveredSquare?.x !== hoveredSquareX || this.hoveredSquare?.y !== hoveredSquareY) {
+			// 将当前悬停的格子添加到蛇身
+			if (this.hoveredSquare) {
+				this.snakeBody.unshift({
+					x: this.hoveredSquare.x,
+					y: this.hoveredSquare.y,
+				});
+
+				// 如果没有吃到食物，移除蛇尾
+				if (!this.shouldGrow && this.snakeBody.length > 0) {
+					this.snakeBody.pop();
+				}
+				this.shouldGrow = false;
+			}
+
+			this.hoveredSquare = { x: hoveredSquareX, y: hoveredSquareY };
+			this.targetOpacity = 0.8 * this.options.touchSensitivity; // 使用触摸灵敏度调整透明度
+
+			// 检查是否吃到食物
+			if (this.specialBlock && hoveredSquareX === this.specialBlock.x && hoveredSquareY === this.specialBlock.y) {
+				this.shouldGrow = true;
+				this.createSpecialBlock();
+				
+				// 移动端吃到食物时的触觉反馈
+				if (this.options.vibrationEnabled && navigator.vibrate) {
+					navigator.vibrate(100);
+				}
+			}
+		}
+	}
+
+	handleTouchEnd() {
+		if (this.hoveredSquare) {
+			const startX = Math.floor(this.gridOffset.x / this.options.squareSize) * this.options.squareSize;
+			const startY = Math.floor(this.gridOffset.y / this.options.squareSize) * this.options.squareSize;
+			const key = `${this.hoveredSquare.x},${this.hoveredSquare.y}`;
+			this.trailSquares.set(key, {
+				x: this.hoveredSquare.x * this.options.squareSize + startX,
+				y: this.hoveredSquare.y * this.options.squareSize + startY,
+				opacity: 0.8,
+			});
+		}
+		this.hoveredSquare = null;
+		this.targetOpacity = 0;
+	}
+
+	resetSnake() {
+		// 重置蛇身
+		this.snakeBody = [];
+		this.hoveredSquare = null;
+		this.targetOpacity = 0;
+		
+		// 清除所有痕迹
+		this.trailSquares.clear();
+		
+		// 重新创建食物
+		this.createSpecialBlock();
+		
+		// 添加重置的视觉反馈
+		if (this.options.vibrationEnabled && navigator.vibrate) {
+			navigator.vibrate(200); // 长震动表示重置
 		}
 	}
 
@@ -513,6 +720,15 @@ class GridAnimation {
 		this.canvas.removeEventListener("mouseleave", () =>
 			this.handleMouseLeave()
 		);
+		
+		// 移除触摸事件监听器
+		if (isPhone && this.handleTouchStart) {
+			this.canvas.removeEventListener("touchstart", this.handleTouchStart);
+			this.canvas.removeEventListener("touchmove", this.handleTouchMoveEvent);
+			this.canvas.removeEventListener("touchend", this.handleTouchEndEvent);
+			this.canvas.removeEventListener("touchcancel", this.handleTouchCancel);
+		}
+		
 		document.removeEventListener(visibilityChangeEvent, this.handleVisibilityChange.bind(this));
 
 		// 移除方向变化监听
@@ -656,14 +872,17 @@ function loadMain() {
 					squareSize: isPhone ? 50 : 40,
 					hoverFillColor: "rgba(255, 255, 255, 0.8)",
 					hoverShadowColor: "rgba(255, 255, 255, 0.8)",
-					transitionDuration: 200,
-					trailDuration: 1500,
+					transitionDuration: isPhone ? 150 : 200, // 移动端更快的过渡
+					trailDuration: isPhone ? 2000 : 1500, // 移动端更长的痕迹
 					specialBlockColor: "rgba(100, 255, 152, 0.8)",
 					specialHoverColor: "rgba(29, 202, 29, 0.8)",
 					// 蛇身颜色渐变配置
 					snakeHeadColor: "rgba(255, 255, 255, 0.95)",
 					snakeTailColor: "rgba(218, 231, 255, 0.25)",
 					snakeColorDecay: 0.85, // 颜色衰减系数
+					// 移动端特殊配置
+					touchSensitivity: isPhone ? 1.2 : 1.0, // 触摸灵敏度
+					vibrationEnabled: isPhone, // 是否启用震动反馈
 				});
 				gridAnimation.init();
 			}

@@ -166,6 +166,11 @@ class GridAnimation {
 				// 立即处理触摸开始位置
 				this.handleTouchMove(touchStartPos.x, touchStartPos.y);
 
+				// 如果之前没有蛇头，设置目标透明度
+				if (!this.hoveredSquare) {
+					this.targetOpacity = 0.8 * this.options.touchSensitivity;
+				}
+
 				// 添加触摸开始时的视觉反馈
 				if (this.options.vibrationEnabled && navigator.vibrate) {
 					navigator.vibrate(10); // 轻微震动反馈
@@ -274,7 +279,8 @@ class GridAnimation {
 			}
 
 			this.hoveredSquare = { x: hoveredSquareX, y: hoveredSquareY };
-			this.targetOpacity = 0.8 * this.options.touchSensitivity; // 使用触摸灵敏度调整透明度
+			// 当用户正在触摸时，设置较高的透明度
+			this.targetOpacity = 0.8 * this.options.touchSensitivity;
 
 			// 检查是否吃到食物
 			if (
@@ -295,6 +301,18 @@ class GridAnimation {
 
 	handleTouchEnd() {
 		if (this.hoveredSquare) {
+			// 将当前悬停的格子添加到蛇身
+			this.snakeBody.unshift({
+				x: this.hoveredSquare.x,
+				y: this.hoveredSquare.y,
+			});
+
+			// 如果没有吃到食物，移除蛇尾
+			if (!this.shouldGrow && this.snakeBody.length > 0) {
+				this.snakeBody.pop();
+			}
+			this.shouldGrow = false;
+
 			const startX =
 				Math.floor(this.gridOffset.x / this.options.squareSize) *
 				this.options.squareSize;
@@ -308,8 +326,12 @@ class GridAnimation {
 				opacity: 0.8,
 			});
 		}
-		this.hoveredSquare = null;
-		this.targetOpacity = 0;
+
+		// 保持蛇身状态，不重置 hoveredSquare
+		// 但降低透明度以显示触摸已结束
+		if (this.hoveredSquare) {
+			this.targetOpacity = 0.4; // 保持较低的透明度显示蛇头位置
+		}
 	}
 
 	resetSnake() {

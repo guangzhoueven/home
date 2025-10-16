@@ -1,0 +1,6 @@
+cd dist
+git init
+git add -A
+git commit -am"init"
+git remote add origin git@github.com:guangzhoueven/home.git
+git push -f origin master

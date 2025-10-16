@@ -1,19 +1,19 @@
 {
 	"head": {
-		"title": "SimonAKing",
-		"description": "Author:SimonAKing,Category:Personal Blog",
-		"favicon": "favicon.ico"
+		"title": "Wecome to my homepage",
+		"description": "Author:guangzhou_even,Category:Personal Blog",
+		"favicon": "favicon.png"
 	},
 	"intro": {
-		"title": "SimonAKing",
-		"subtitle": "Front back left right end engineer",
+		"title": "guangzhou_even",
+		"subtitle": "欢迎来到我的主页！",
 		"enter": "enter",
 		"supportAuthor": true,
 		"background": true
 	},
 	"main": {
-		"name": "SimonAKing",
-		"signature": "Code & Input & Output",
+		"name": "guangzhou_even",
+		"signature": "",
 		"avatar": {
 			"link": "assets/avatar.jpg",
 			"height": "100",
@@ -21,22 +21,22 @@
 		},
 		"ul": {
 			"first": {
-				"href": "blog/",
+				"href": "https://blog.guangzhoueven.dpdns.org/",
 				"icon": "bokeyuan",
 				"text": "Blog"
 			},
 			"second": {
-				"href": "about/",
+				"href": "https://blog.guangzhoueven.dpdns.org/about/",
 				"icon": "xiaolian",
 				"text": "About"
 			},
 			"third": {
-				"href": "mailto:hi@simonaking.com",
+				"href": "mailto:10062132@qq.com",
 				"icon": "email",
 				"text": "Email"
 			},
 			"fourth": {
-				"href": "https://github.com/SimonAKing",
+				"href": "https://github.com/guangzhoueven",
 				"icon": "github",
 				"text": "Github"
 			}
